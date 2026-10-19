@@ -29,15 +29,15 @@ import { showToast } from '@/utils/toast'
 const userStore = useUserStore()
 
 function onMenu(item) {
-  if (item.action === 'service') {
-    runMenuAction(item.action)
+  if (item.action === 'service' || item.action === 'navigate') {
+    runMenuAction(item)
     return
   }
   if (!userStore.isLogin) {
     showToast('请先登录')
     return
   }
-  runMenuAction(item.action)
+  runMenuAction(item)
 }
 
 function confirmLogout() {

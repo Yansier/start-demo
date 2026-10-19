@@ -29,12 +29,36 @@
       "style": {
         "navigationBarTitleText": "注册"
       }
+    },
+    {
+      "path": "pages/activity/detail",
+      "style": {
+        "navigationBarTitleText": "活动详情"
+      }
+    },
+    {
+      "path": "pages/task/index",
+      "style": {
+        "navigationBarTitleText": "任务中心"
+      }
+    },
+    {
+      "path": "pages/vip/index",
+      "style": {
+        "navigationBarTitleText": "VIP"
+      }
+    },
+    {
+      "path": "pages/invite/index",
+      "style": {
+        "navigationBarTitleText": "邀请好友"
+      }
     }
   ],
   "globalStyle": {
     "navigationStyle": "custom",
     "navigationBarTextStyle": "white",
-    "navigationBarTitleText": "ZZYL",
+    "navigationBarTitleText": "DEMO",
     "navigationBarBackgroundColor": "#07091A",
     "backgroundColor": "#07091A",
     "backgroundColorTop": "#07091A",

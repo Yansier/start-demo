@@ -1,11 +1,11 @@
-export const APP_NAME = 'ZZYL'
+export const APP_NAME = 'DEMO'
 
-export const TELEGRAM_SERVICE = 'https://t.me/zzyl_service'
-export const VIP_SERVICE = 'https://t.me/zzyl_vip'
+export const TELEGRAM_SERVICE = 'https://t.me/demo_service'
+export const VIP_SERVICE = 'https://t.me/demo_vip'
 export const TELEGRAM_BOT = 'https://t.me/demo_bot'
-export const OFFICIAL_CHANNEL = 'https://t.me/zzyl_channel'
-export const USDT_ADDRESS = 'TDemoUsdt909Addressxxxxxxxx'
-export const WEB_SERVICE = 'https://support.zzyl909.com'
+export const OFFICIAL_CHANNEL = 'https://t.me/demo_channel'
+export const USDT_ADDRESS = 'TDemoUsdtAddressxxxxxxxx'
+export const WEB_SERVICE = 'https://demo.example.com/support'
 export const INVITE_DOMAIN = ''
 
 export const SERVICE_CHANNELS = [

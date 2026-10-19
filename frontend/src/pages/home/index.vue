@@ -36,7 +36,7 @@ onLoad((query) => {
 })
 
 function onQuick(item) {
-  runMenuAction(item.action)
+  runMenuAction(item)
 }
 
 function onGame() {

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { loginByPassword, loginByTelegram, registerByPassword } from '@/api/auth'
 import { readJSON, writeJSON } from '@/utils/storage'
 
-const STORAGE_KEY = 'zzyl_demo_session'
+const STORAGE_KEY = 'start_demo_session'
 
 function emptyRemember() {
   return { enabled: false, account: '', password: '' }
