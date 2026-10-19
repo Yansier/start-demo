@@ -1,13 +1,24 @@
 package com.startdemo.server.service;
 
 import com.startdemo.server.domain.DemoWallet;
+import com.startdemo.server.domain.PaymentStatus;
 import com.startdemo.server.domain.SessionStatus;
 import com.startdemo.server.domain.TransactionType;
 import com.startdemo.server.error.BusinessException;
 import com.startdemo.server.provider.MockGameProvider;
 import com.startdemo.server.repository.DemoWalletRepository;
+import com.startdemo.server.repository.DepositOrderRepository;
 import com.startdemo.server.repository.GameSessionRepository;
 import com.startdemo.server.repository.WalletTransactionRepository;
+import com.startdemo.server.repository.WithdrawalOrderRepository;
+import com.startdemo.server.web.admin.dto.AdminDashboardResponse;
+import com.startdemo.server.web.admin.dto.AdminSessionResponse;
+import com.startdemo.server.web.admin.dto.AdminSystemStatusResponse;
+import com.startdemo.server.web.admin.dto.AdminTransactionResponse;
+import com.startdemo.server.web.admin.dto.AdminUserDetailResponse;
+import com.startdemo.server.web.admin.dto.AdminUserResponse;
+import com.startdemo.server.web.payment.dto.DepositOrderResponse;
+import com.startdemo.server.web.payment.dto.WithdrawalOrderResponse;
 import com.startdemo.server.web.admin.dto.AdminDashboardResponse;
 import com.startdemo.server.web.admin.dto.AdminSessionResponse;
 import com.startdemo.server.web.admin.dto.AdminSystemStatusResponse;
@@ -25,8 +36,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * DEMO ONLY，只读查询。
- * 公网开放管理接口之前必须增加访问保护。本服务不修改余额、流水或会话。
+ * DEMO ONLY。本类只做查询。
+ * 充值提现审核是写操作，在 PaymentService，增加访问保护之前不能公开部署。
  */
 @Service
 @Transactional(readOnly = true)
@@ -39,15 +50,21 @@ public class AdminQueryService {
     private final DemoWalletRepository walletRepository;
     private final GameSessionRepository sessionRepository;
     private final WalletTransactionRepository transactionRepository;
+    private final DepositOrderRepository depositRepository;
+    private final WithdrawalOrderRepository withdrawalRepository;
 
     public AdminQueryService(
             DemoWalletRepository walletRepository,
             GameSessionRepository sessionRepository,
-            WalletTransactionRepository transactionRepository
+            WalletTransactionRepository transactionRepository,
+            DepositOrderRepository depositRepository,
+            WithdrawalOrderRepository withdrawalRepository
     ) {
         this.walletRepository = walletRepository;
         this.sessionRepository = sessionRepository;
         this.transactionRepository = transactionRepository;
+        this.depositRepository = depositRepository;
+        this.withdrawalRepository = withdrawalRepository;
     }
 
     public AdminDashboardResponse dashboard() {
@@ -63,7 +80,9 @@ public class AdminQueryService {
                 transactionRepository.countByTypeCreatedBetween(TransactionType.SETTLE, from, to),
                 money(transactionRepository.sumAmountByTypeCreatedBetween(TransactionType.SETTLE, from, to)),
                 transactionRepository.countByTypeCreatedBetween(TransactionType.ROLLBACK, from, to),
-                transactionRepository.countCreatedBetween(from, to)
+                transactionRepository.countCreatedBetween(from, to),
+                depositRepository.countByStatus(PaymentStatus.PENDING),
+                withdrawalRepository.countByStatus(PaymentStatus.PENDING)
         );
     }
 
@@ -92,6 +111,20 @@ public class AdminQueryService {
                 .toList();
     }
 
+    public List<DepositOrderResponse> deposits(String uid, String status, Integer limit) {
+        return depositRepository.search(blankToNull(uid), parseStatus(status), PageRequest.of(0, normalizeLimit(limit)))
+                .stream()
+                .map(DepositOrderResponse::from)
+                .toList();
+    }
+
+    public List<WithdrawalOrderResponse> withdrawals(String uid, String status, Integer limit) {
+        return withdrawalRepository.search(blankToNull(uid), parseStatus(status), PageRequest.of(0, normalizeLimit(limit)))
+                .stream()
+                .map(WithdrawalOrderResponse::from)
+                .toList();
+    }
+
     public AdminSystemStatusResponse status() {
         return new AdminSystemStatusResponse(
                 "UP",
@@ -101,6 +134,18 @@ public class AdminQueryService {
                 LocalDateTime.now(),
                 "0.1.0"
         );
+    }
+
+    private PaymentStatus parseStatus(String status) {
+        String value = blankToNull(status);
+        if (value == null) {
+            return null;
+        }
+        try {
+            return PaymentStatus.valueOf(value);
+        } catch (IllegalArgumentException ex) {
+            throw new BusinessException("订单状态不正确");
+        }
     }
 
     private TransactionType parseType(String type) {

@@ -9,6 +9,8 @@
       <article class="card"><em>今日派奖金额</em><strong>{{ money(store.dashboard.todaySettleAmount) }}</strong></article>
       <article class="card"><em>今日 ROLLBACK</em><strong>{{ store.dashboard.todayRollbackCount }}</strong></article>
       <article class="card"><em>今日流水</em><strong>{{ store.dashboard.todayTransactionCount }}</strong></article>
+      <article class="card"><em>待审核充值</em><strong>{{ store.dashboard.pendingDeposits }}</strong></article>
+      <article class="card"><em>待审核提现</em><strong>{{ store.dashboard.pendingWithdrawals }}</strong></article>
     </section>
     <section class="panel">
       <h2>最近游戏流水</h2>

@@ -3,8 +3,10 @@ package com.startdemo.server.service;
 import com.startdemo.server.domain.SessionStatus;
 import com.startdemo.server.provider.MockGameProvider;
 import com.startdemo.server.repository.DemoWalletRepository;
+import com.startdemo.server.repository.DepositOrderRepository;
 import com.startdemo.server.repository.GameSessionRepository;
 import com.startdemo.server.repository.WalletTransactionRepository;
+import com.startdemo.server.repository.WithdrawalOrderRepository;
 import com.startdemo.server.web.admin.dto.AdminDashboardResponse;
 import com.startdemo.server.web.admin.dto.AdminTransactionResponse;
 import com.startdemo.server.web.admin.dto.AdminUserDetailResponse;
@@ -40,8 +42,16 @@ class AdminQueryServiceTest {
     @Autowired
     private WalletTransactionRepository transactionRepository;
 
+    @Autowired
+    private DepositOrderRepository depositRepository;
+
+    @Autowired
+    private WithdrawalOrderRepository withdrawalRepository;
+
     @BeforeEach
     void clean() {
+        depositRepository.deleteAll();
+        withdrawalRepository.deleteAll();
         transactionRepository.deleteAll();
         sessionRepository.deleteAll();
         walletRepository.deleteAll();
@@ -68,6 +78,8 @@ class AdminQueryServiceTest {
         assertThat(dashboard.todaySettleAmount()).isEqualByComparingTo("80.00");
         assertThat(dashboard.todayRollbackCount()).isZero();
         assertThat(dashboard.todayTransactionCount()).isEqualTo(4);
+        assertThat(dashboard.pendingDeposits()).isZero();
+        assertThat(dashboard.pendingWithdrawals()).isZero();
         assertThat(sessionRepository.countByStatus(SessionStatus.CLOSED)).isEqualTo(1);
     }
 

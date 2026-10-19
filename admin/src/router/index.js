@@ -13,6 +13,8 @@ const router = createRouter({
         { path: 'users', component: () => import('@/views/UsersView.vue') },
         { path: 'users/:uid', component: () => import('@/views/UserDetailView.vue') },
         { path: 'transactions', component: () => import('@/views/TransactionsView.vue') },
+        { path: 'deposits', component: () => import('@/views/DepositsView.vue') },
+        { path: 'withdrawals', component: () => import('@/views/WithdrawalsView.vue') },
         { path: 'status', component: () => import('@/views/StatusView.vue') }
       ]
     }

@@ -165,3 +165,31 @@ DEMO ONLY。READ ONLY。
 `walletUsers` 是已经写入 Java Game Wallet 的用户数，不是前端 Mock 注册人数。今日 BET 金额按注单绝对值汇总为正数。统计在服务端完成。
 
 本地管理后台在 `admin/`，开发地址 `http://localhost:5174`。先启动本服务的 8080，再启动 admin。
+
+## Phase 5B.1 充值提现订单
+
+DEMO ONLY。LOCAL DEMO ONLY。
+
+玩家侧接口没有登录，uid 由请求传入，不能当作生产支付接口：
+
+- `POST /api/payments/deposits`
+- `GET /api/payments/deposits/{uid}`
+- `POST /api/payments/withdrawals`
+- `GET /api/payments/withdrawals/{uid}`
+
+管理端查询和审核：
+
+- `GET /api/admin/deposits`
+- `POST /api/admin/deposits/{orderNo}/approve`
+- `POST /api/admin/deposits/{orderNo}/reject`
+- `GET /api/admin/withdrawals`
+- `POST /api/admin/withdrawals/{orderNo}/approve`
+- `POST /api/admin/withdrawals/{orderNo}/reject`
+
+审核接口会修改余额或订单状态。当前没有 Admin 登录。在增加访问保护之前，不能把这些接口或新的 jar 部署到公网，也不要更新 `api.stockfines.com`。
+
+充值创建时不改余额，审核通过才增加一次。提现因为当前没有可用余额和冻结余额，提交时先从 DemoWallet 扣除，拒绝时把原金额退回，通过时不再扣款。这是 Demo 简化方案。正式项目应单独设计可用余额、冻结余额和提现锁定。
+
+充值提现不写入游戏流水 `WalletTransaction`。游戏流水仍然只有 BET、SETTLE、ROLLBACK。
+
+`syncDemoBalance` 仍然只用于 Demo 初始化，不参与审核。

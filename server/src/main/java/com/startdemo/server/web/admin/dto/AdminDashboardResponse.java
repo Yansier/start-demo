@@ -11,6 +11,8 @@ public record AdminDashboardResponse(
         long todaySettleCount,
         BigDecimal todaySettleAmount,
         long todayRollbackCount,
-        long todayTransactionCount
+        long todayTransactionCount,
+        long pendingDeposits,
+        long pendingWithdrawals
 ) {
 }

@@ -196,6 +196,29 @@ select {
 .tag.BET { color: #ff8aa6; }
 .tag.SETTLE { color: #5ee0c2; }
 .tag.ROLLBACK { color: #e6c15a; }
+.tag.PENDING { color: #e6c15a; }
+.tag.APPROVED { color: #5ee0c2; }
+.tag.REJECTED { color: #ff8aa6; }
+
+.actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn.small {
+  height: 30px;
+  padding: 0 10px;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.alert {
+  margin-bottom: 12px;
+  color: #ff8aa6;
+}
 
 .meta {
   display: grid;
