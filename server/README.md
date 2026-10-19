@@ -122,6 +122,7 @@ BET 记负数流水，SETTLE 记正数流水。ROLLBACK 按原 BET 金额退回�
 允许：
 
 - `http://localhost:5173`
+- `http://localhost:5174`
 - `https://yansier.github.io`
 
 不使用 `allowedOrigins("*")`。
@@ -148,3 +149,19 @@ npm run dev:h5
 ```
 
 打开 `http://localhost:5173/`，使用 `demo` / `123456` 登录，从首页进入 Demo Slots。可以验证 BET、SETTLE、ROLLBACK 和游戏流水。进入游戏前，前端会把当前 Demo 余额同步到 Java 钱包，这只用于当前 Demo。
+
+## Phase 5A Admin Query API
+
+DEMO ONLY。READ ONLY。
+
+这些接口只给本地管理后台演示查询，没有登录和访问保护。在把管理后台或这组接口部署到公网之前，必须先增加访问保护。不要把包含这些接口的新 jar 当作已经可以公开使用的管理服务。
+
+- `GET /api/admin/dashboard`
+- `GET /api/admin/users`
+- `GET /api/admin/users/{uid}`
+- `GET /api/admin/transactions`
+- `GET /api/admin/status`
+
+`walletUsers` 是已经写入 Java Game Wallet 的用户数，不是前端 Mock 注册人数。今日 BET 金额按注单绝对值汇总为正数。统计在服务端完成。
+
+本地管理后台在 `admin/`，开发地址 `http://localhost:5174`。先启动本服务的 8080，再启动 admin。

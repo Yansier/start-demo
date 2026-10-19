@@ -1,0 +1,214 @@
+:root {
+  color: #e8eefc;
+  background: #10141d;
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 14px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 1100px;
+  background: #10141d;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 100vh;
+}
+
+.side {
+  background: #171c27;
+  border-right: 1px solid #2a3346;
+  padding: 22px 14px;
+}
+
+.brand {
+  margin: 0 10px 22px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.brand span {
+  display: block;
+  margin-top: 4px;
+  color: #8ea0c3;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.nav a {
+  display: block;
+  margin-bottom: 4px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #c5d0e6;
+}
+
+.nav a.router-link-active {
+  color: #fff;
+  background: #2d3d66;
+}
+
+.main {
+  padding: 24px 28px 40px;
+}
+
+.page-title {
+  margin: 0 0 18px;
+  font-size: 22px;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.card,
+.panel {
+  background: #1b2230;
+  border: 1px solid #2c364a;
+  border-radius: 12px;
+}
+
+.card {
+  padding: 16px;
+}
+
+.card em {
+  display: block;
+  color: #93a4c4;
+  font-style: normal;
+}
+
+.card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 26px;
+}
+
+.panel {
+  margin-top: 16px;
+  padding: 16px;
+}
+
+.panel h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #2a3346;
+  text-align: left;
+  white-space: nowrap;
+}
+
+th {
+  color: #93a4c4;
+  font-weight: 600;
+}
+
+.filters {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 14px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #93a4c4;
+  font-size: 12px;
+}
+
+input,
+select {
+  height: 36px;
+  min-width: 180px;
+  padding: 0 10px;
+  border: 1px solid #364258;
+  border-radius: 8px;
+  background: #121722;
+}
+
+.btn {
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: #3d5ccc;
+  color: #fff;
+  cursor: pointer;
+}
+
+.btn.ghost {
+  background: transparent;
+  border: 1px solid #364258;
+}
+
+.link {
+  color: #8eb4ff;
+}
+
+.state {
+  padding: 28px 8px;
+  color: #b7c3da;
+}
+
+.state button {
+  margin-top: 12px;
+}
+
+.tag {
+  font-weight: 700;
+}
+
+.tag.BET { color: #ff8aa6; }
+.tag.SETTLE { color: #5ee0c2; }
+.tag.ROLLBACK { color: #e6c15a; }
+
+.meta {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 8px 16px;
+}
+
+.meta span {
+  color: #93a4c4;
+}
+
+.note {
+  margin-top: 16px;
+  color: #93a4c4;
+  line-height: 1.6;
+}
