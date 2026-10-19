@@ -38,14 +38,14 @@
           v-for="item in stakes"
           :key="item"
           class="stake"
-          :class="{ on: item === stake, off: busy }"
+          :class="{ on: item === stake, off: roundLocked }"
           @click="chooseStake(item)"
         >
           {{ item }}
         </view>
       </view>
 
-      <view class="btn-primary spin" :class="{ 'is-disabled': busy }" @click="startRound">开始游戏</view>
+      <view class="btn-primary spin" :class="{ 'is-disabled': roundLocked }" @click="startRound">开始游戏</view>
 
       <view class="tools">
         <text class="tools__toggle" @click="toolsOpen = !toolsOpen">{{ toolsOpen ? '收起演示工具' : '演示工具' }}</text>
@@ -145,12 +145,12 @@ function showNotice(title, text) {
 }
 
 function chooseStake(value) {
-  if (busy.value) return
+  if (roundLocked.value) return
   stake.value = value
 }
 
 function startRound() {
-  if (!canPlay.value || busy.value) return
+  if (!canPlay.value || roundLocked.value) return
   busy.value = true
   spinning.value = true
   winAmount.value = 0
