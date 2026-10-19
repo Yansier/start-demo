@@ -7,6 +7,7 @@ export const categories = [
 ]
 
 export const games = [
+  { id: 'demo-slots', name: 'Demo Slots', provider: 'MOCK', providerShort: 'DEMO', category: 'slot', hot: true, playable: true, cover: 'linear-gradient(160deg, #7d5cff 0%, #24124f 100%)' },
   { id: 'mahjong', name: '麻将胡了', provider: 'PG电子', providerShort: 'PG', category: 'slot', hot: true, cover: 'linear-gradient(160deg, #7a4dff 0%, #2a1860 100%)' },
   { id: 'queen', name: '赏金女王', provider: 'PG电子', providerShort: 'PG', category: 'slot', hot: true, cover: 'linear-gradient(160deg, #ff5fa2 0%, #5a1d6e 100%)' },
   { id: 'olympus', name: '奥林匹斯', provider: 'PP电子', providerShort: 'PP', category: 'slot', hot: true, cover: 'linear-gradient(160deg, #f0b429 0%, #7a3d12 100%)' },

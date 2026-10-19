@@ -11,7 +11,9 @@ export const ROUTES = {
   withdrawRecords: '/pages/withdraw/records',
   user: '/pages/user/index',
   login: '/pages/login/index',
-  register: '/pages/register/index'
+  register: '/pages/register/index',
+  gameDemo: '/pages/game/demo-slots',
+  gameTransactions: '/pages/game/transactions'
 }
 
 export const TAB_PAGES = [ROUTES.home, ROUTES.activity, ROUTES.user]

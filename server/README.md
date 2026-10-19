@@ -89,7 +89,7 @@ jdbc:h2:file:./data/start-demo
 
 成功时返回 `transactionId`、`balance`、`status: SUCCESS`。
 
-BET 记负数流水，SETTLE 记正数流水。ROLLBACK 按原 BET 金额退回。同一个 `transactionId` 重复请求不会再次改余额。同一个 BET 只能回滚一次。会话关闭后不能再 BET 或 SETTLE。
+BET 记负数流水，SETTLE 记正数流水。ROLLBACK 按原 BET 金额退回。同一个 `transactionId` 只有在会话、金额和关联注单都一致时才按幂等返回，内容不一致会拒绝。一笔 BET 只能结算或撤单一次，已结算不能撤单，已撤单不能结算。会话关闭后不能再 BET 或 SETTLE。
 
 ### 查询流水
 
@@ -125,3 +125,26 @@ BET 记负数流水，SETTLE 记正数流水。ROLLBACK 按原 BET 金额退回�
 - `https://yansier.github.io`
 
 不使用 `allowedOrigins("*")`。
+
+## Phase 4B 本地联调
+
+GitHub Pages 目前只展示前端。Java Server 还没有部署到公网，线上 Demo Game 不会去连接 `localhost`。Phase 4.5 再部署 Java Server。
+
+本地需要两个终端。
+
+终端 1，在 `server` 目录。如果新终端找不到 `java` 或 `mvn`，先设置：
+
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot"
+$env:Path = "$env:JAVA_HOME\bin;C:\Users\YOGA14s\tools\apache-maven-3.9.11\bin;" + $env:Path
+mvn spring-boot:run
+```
+
+终端 2：
+
+```powershell
+cd frontend
+npm run dev:h5
+```
+
+打开 `http://localhost:5173/`，使用 `demo` / `123456` 登录，从首页进入 Demo Slots。可以验证 BET、SETTLE、ROLLBACK 和游戏流水。进入游戏前，前端会把当前 Demo 余额同步到 Java 钱包，这只用于当前 Demo。

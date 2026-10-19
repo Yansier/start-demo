@@ -8,6 +8,7 @@ import com.startdemo.server.repository.GameSessionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -58,8 +59,11 @@ public class GameSessionService {
         return session;
     }
 
+    public Optional<GameSession> find(String sessionId) {
+        return sessionRepository.findBySessionId(sessionId);
+    }
+
     private GameSession require(String sessionId) {
-        return sessionRepository.findBySessionId(sessionId)
-                .orElseThrow(() -> new BusinessException("游戏会话不存在"));
+        return find(sessionId).orElseThrow(() -> new BusinessException("游戏会话不存在"));
     }
 }

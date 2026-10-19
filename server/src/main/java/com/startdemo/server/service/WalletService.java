@@ -2,7 +2,6 @@ package com.startdemo.server.service;
 
 import com.startdemo.server.domain.DemoWallet;
 import com.startdemo.server.domain.GameSession;
-import com.startdemo.server.domain.SessionStatus;
 import com.startdemo.server.domain.TransactionType;
 import com.startdemo.server.domain.WalletTransaction;
 import com.startdemo.server.error.BusinessException;
@@ -17,12 +16,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class WalletService {
 
     private static final int MONEY_SCALE = 2;
+    private static final String MISMATCH = "交易号已存在，但请求内容不一致";
 
     private final DemoWalletRepository walletRepository;
     private final WalletTransactionRepository transactionRepository;
@@ -81,16 +80,16 @@ public class WalletService {
     @Transactional
     public WalletResult bet(String providerCode, String sessionId, String transactionId, BigDecimal amount) {
         BigDecimal stake = positive(amount);
-        Optional<WalletResult> replayed = replay(transactionId, TransactionType.BET);
-        if (replayed.isPresent()) {
-            return replayed.get();
+        WalletResult replayed = replayBet(transactionId, sessionId, stake);
+        if (replayed != null) {
+            return replayed;
         }
 
         GameSession session = sessionService.requireActive(sessionId, providerCode);
         DemoWallet wallet = lockWallet(session.getUid());
-        replayed = replay(transactionId, TransactionType.BET);
-        if (replayed.isPresent()) {
-            return replayed.get();
+        replayed = replayBet(transactionId, sessionId, stake);
+        if (replayed != null) {
+            return replayed;
         }
 
         if (wallet.getBalance().compareTo(stake) < 0) {
@@ -122,19 +121,26 @@ public class WalletService {
             BigDecimal amount
     ) {
         BigDecimal win = nonNegative(amount);
-        Optional<WalletResult> replayed = replay(transactionId, TransactionType.SETTLE);
-        if (replayed.isPresent()) {
-            return replayed.get();
+        WalletResult replayed = replaySettle(transactionId, sessionId, relatedTransactionId, win);
+        if (replayed != null) {
+            return replayed;
         }
 
         GameSession session = sessionService.requireActive(sessionId, providerCode);
         DemoWallet wallet = lockWallet(session.getUid());
-        replayed = replay(transactionId, TransactionType.SETTLE);
-        if (replayed.isPresent()) {
-            return replayed.get();
+        replayed = replaySettle(transactionId, sessionId, relatedTransactionId, win);
+        if (replayed != null) {
+            return replayed;
         }
 
-        requireBet(relatedTransactionId, session);
+        WalletTransaction bet = requireBet(relatedTransactionId, session);
+        if (hasType(bet.getTransactionId(), TransactionType.ROLLBACK)) {
+            throw new BusinessException("该注单已撤单，不能结算");
+        }
+        if (hasType(bet.getTransactionId(), TransactionType.SETTLE)) {
+            throw new BusinessException("该注单已结算，不能重复结算");
+        }
+
         BigDecimal before = wallet.getBalance();
         BigDecimal after = before.add(win);
         wallet.setBalance(after);
@@ -158,20 +164,23 @@ public class WalletService {
             String transactionId,
             String relatedTransactionId
     ) {
-        Optional<WalletResult> replayed = replay(transactionId, TransactionType.ROLLBACK);
-        if (replayed.isPresent()) {
-            return replayed.get();
+        WalletResult replayed = replayRollback(transactionId, sessionId, relatedTransactionId);
+        if (replayed != null) {
+            return replayed;
         }
 
         GameSession session = sessionService.requireForProvider(sessionId, providerCode);
         DemoWallet wallet = lockWallet(session.getUid());
-        replayed = replay(transactionId, TransactionType.ROLLBACK);
-        if (replayed.isPresent()) {
-            return replayed.get();
+        replayed = replayRollback(transactionId, sessionId, relatedTransactionId);
+        if (replayed != null) {
+            return replayed;
         }
 
         WalletTransaction bet = requireBet(relatedTransactionId, session);
-        if (transactionRepository.existsByRelatedTransactionIdAndType(bet.getTransactionId(), TransactionType.ROLLBACK)) {
+        if (hasType(bet.getTransactionId(), TransactionType.SETTLE)) {
+            throw new BusinessException("该注单已结算，不能直接撤单");
+        }
+        if (hasType(bet.getTransactionId(), TransactionType.ROLLBACK)) {
             return WalletResult.success(transactionId, wallet.getBalance());
         }
 
@@ -192,13 +201,73 @@ public class WalletService {
         return WalletResult.success(transactionId, after);
     }
 
-    private Optional<WalletResult> replay(String transactionId, TransactionType expected) {
-        return transactionRepository.findByTransactionId(transactionId).map(existing -> {
-            if (existing.getType() != expected) {
-                throw new BusinessException("交易号已存在");
-            }
-            return WalletResult.success(existing.getTransactionId(), existing.getBalanceAfter());
-        });
+    private WalletResult replayBet(String transactionId, String sessionId, BigDecimal stake) {
+        WalletTransaction existing = findExisting(transactionId);
+        if (existing == null) {
+            return null;
+        }
+        boolean same = existing.getType() == TransactionType.BET
+                && sessionId.equals(existing.getSessionId())
+                && sameMoney(stake.negate(), existing.getAmount())
+                && sameUid(sessionId, existing.getUid());
+        if (!same) {
+            throw new BusinessException(MISMATCH);
+        }
+        return WalletResult.success(existing.getTransactionId(), existing.getBalanceAfter());
+    }
+
+    private WalletResult replaySettle(
+            String transactionId,
+            String sessionId,
+            String relatedTransactionId,
+            BigDecimal amount
+    ) {
+        WalletTransaction existing = findExisting(transactionId);
+        if (existing == null) {
+            return null;
+        }
+        boolean same = existing.getType() == TransactionType.SETTLE
+                && sessionId.equals(existing.getSessionId())
+                && relatedTransactionId.equals(existing.getRelatedTransactionId())
+                && sameMoney(amount, existing.getAmount())
+                && sameUid(sessionId, existing.getUid());
+        if (!same) {
+            throw new BusinessException(MISMATCH);
+        }
+        return WalletResult.success(existing.getTransactionId(), existing.getBalanceAfter());
+    }
+
+    private WalletResult replayRollback(String transactionId, String sessionId, String relatedTransactionId) {
+        WalletTransaction existing = findExisting(transactionId);
+        if (existing == null) {
+            return null;
+        }
+        boolean same = existing.getType() == TransactionType.ROLLBACK
+                && sessionId.equals(existing.getSessionId())
+                && relatedTransactionId.equals(existing.getRelatedTransactionId())
+                && sameUid(sessionId, existing.getUid());
+        if (!same) {
+            throw new BusinessException(MISMATCH);
+        }
+        return WalletResult.success(existing.getTransactionId(), existing.getBalanceAfter());
+    }
+
+    private WalletTransaction findExisting(String transactionId) {
+        return transactionRepository.findByTransactionId(transactionId).orElse(null);
+    }
+
+    private boolean hasType(String relatedTransactionId, TransactionType type) {
+        return transactionRepository.existsByRelatedTransactionIdAndType(relatedTransactionId, type);
+    }
+
+    private boolean sameUid(String sessionId, String uid) {
+        return sessionService.find(sessionId)
+                .map(session -> uid.equals(session.getUid()))
+                .orElse(true);
+    }
+
+    private boolean sameMoney(BigDecimal left, BigDecimal right) {
+        return left.compareTo(right) == 0;
     }
 
     private WalletTransaction requireBet(String relatedTransactionId, GameSession session) {

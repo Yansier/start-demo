@@ -4,6 +4,10 @@ import { readJSON, writeJSON } from '@/utils/storage'
 
 const STORAGE_KEY = 'start_demo_session'
 
+function roundMoney(value) {
+  return Math.round(Number(value) * 100) / 100
+}
+
 function emptyRemember() {
   return { enabled: false, account: '', password: '' }
 }
@@ -15,6 +19,7 @@ export const useUserStore = defineStore('user', {
     remember: emptyRemember(),
     localUsers: [],
     pendingInviteCode: '',
+    balanceMap: {},
     ready: false
   }),
   getters: {
@@ -30,6 +35,14 @@ export const useUserStore = defineStore('user', {
         this.remember = { ...emptyRemember(), ...(saved.remember || {}) }
         this.localUsers = Array.isArray(saved.localUsers) ? saved.localUsers : []
         this.pendingInviteCode = saved.pendingInviteCode || ''
+        this.balanceMap = saved.balanceMap && typeof saved.balanceMap === 'object' && !Array.isArray(saved.balanceMap)
+          ? saved.balanceMap
+          : {}
+      }
+      const uid = this.profile?.uid
+      if (uid && !Object.prototype.hasOwnProperty.call(this.balanceMap, uid)) {
+        this.balanceMap = { ...this.balanceMap, [uid]: roundMoney(this.profile.balance) }
+        this.persist()
       }
       this.ready = true
     },
@@ -39,7 +52,8 @@ export const useUserStore = defineStore('user', {
         profile: this.profile,
         remember: this.remember,
         localUsers: this.localUsers,
-        pendingInviteCode: this.pendingInviteCode
+        pendingInviteCode: this.pendingInviteCode,
+        balanceMap: this.balanceMap
       })
     },
     setPendingInviteCode(code) {
@@ -55,7 +69,7 @@ export const useUserStore = defineStore('user', {
         localUsers: this.localUsers
       })
       this.token = result.token
-      this.profile = result.profile
+      this.profile = this.applyStoredBalance(result.profile)
       this.remember = remember
         ? { enabled: true, account: String(account).trim(), password }
         : emptyRemember()
@@ -65,7 +79,7 @@ export const useUserStore = defineStore('user', {
     async loginWithTelegram() {
       const result = await loginByTelegram()
       this.token = result.token
-      this.profile = result.profile
+      this.profile = this.applyStoredBalance(result.profile)
       this.persist()
       return result
     },
@@ -78,7 +92,7 @@ export const useUserStore = defineStore('user', {
       })
       this.localUsers = [...this.localUsers, result.user]
       this.token = result.token
-      this.profile = result.profile
+      this.profile = this.applyStoredBalance(result.profile)
       this.persist()
       return result
     },
@@ -89,9 +103,23 @@ export const useUserStore = defineStore('user', {
     },
     setBalance(value) {
       if (!this.profile) return
-      const balance = Math.round(Number(value) * 100) / 100
+      const balance = roundMoney(value)
+      const uid = this.profile.uid
       this.profile = { ...this.profile, balance }
+      if (uid) {
+        this.balanceMap = { ...this.balanceMap, [uid]: balance }
+      }
       this.persist()
+    },
+    applyStoredBalance(profile) {
+      const uid = profile?.uid
+      if (!uid) return profile
+      if (Object.prototype.hasOwnProperty.call(this.balanceMap, uid)) {
+        return { ...profile, balance: roundMoney(this.balanceMap[uid]) }
+      }
+      const balance = roundMoney(profile.balance)
+      this.balanceMap = { ...this.balanceMap, [uid]: balance }
+      return { ...profile, balance }
     },
     adjustBalance(amount) {
       const current = Number(this.profile?.balance) || 0

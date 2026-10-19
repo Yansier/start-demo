@@ -119,6 +119,78 @@ class WalletServiceTest {
         assertThat(transactionRepository.findByTransactionId("BET-LOW")).isEmpty();
     }
 
+    @Test
+    void replayBetWithDifferentAmountFails() {
+        String sessionId = openSession(OPENING);
+        walletService.bet(MockGameProvider.CODE, sessionId, "BET-001", new BigDecimal("50"));
+
+        assertThatThrownBy(() -> walletService.bet(MockGameProvider.CODE, sessionId, "BET-001", new BigDecimal("100")))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("交易号已存在，但请求内容不一致");
+
+        assertThat(walletService.getBalance(UID).balance()).isEqualByComparingTo("1838.66");
+        assertThat(transactionRepository.findByUidOrderByCreatedAtDesc(UID)).hasSize(1);
+    }
+
+    @Test
+    void replayBetWithDifferentSessionFails() {
+        String sessionA = openSession(OPENING);
+        String sessionB = sessionService.launch(UID, "demo-slots", MockGameProvider.CODE).getSessionId();
+        walletService.bet(MockGameProvider.CODE, sessionA, "BET-001", new BigDecimal("50"));
+
+        assertThatThrownBy(() -> walletService.bet(MockGameProvider.CODE, sessionB, "BET-001", new BigDecimal("50")))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("交易号已存在，但请求内容不一致");
+
+        assertThat(walletService.getBalance(UID).balance()).isEqualByComparingTo("1838.66");
+    }
+
+    @Test
+    void rollbackAfterSettleFails() {
+        String sessionId = openSession(OPENING);
+        walletService.bet(MockGameProvider.CODE, sessionId, "BET-001", new BigDecimal("50"));
+        walletService.settle(MockGameProvider.CODE, sessionId, "SETTLE-001", "BET-001", new BigDecimal("100"));
+
+        assertThatThrownBy(() -> walletService.rollback(MockGameProvider.CODE, sessionId, "ROLLBACK-001", "BET-001"))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("该注单已结算，不能直接撤单");
+
+        assertThat(walletService.getBalance(UID).balance()).isEqualByComparingTo("1938.66");
+    }
+
+    @Test
+    void settleAfterRollbackFails() {
+        String sessionId = openSession(OPENING);
+        walletService.bet(MockGameProvider.CODE, sessionId, "BET-001", new BigDecimal("50"));
+        walletService.rollback(MockGameProvider.CODE, sessionId, "ROLLBACK-001", "BET-001");
+
+        assertThatThrownBy(() -> walletService.settle(
+                MockGameProvider.CODE, sessionId, "SETTLE-001", "BET-001", new BigDecimal("100")))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("该注单已撤单，不能结算");
+
+        assertThat(walletService.getBalance(UID).balance()).isEqualByComparingTo("1888.66");
+    }
+
+    @Test
+    void replaySettleWithDifferentPayloadFails() {
+        String sessionId = openSession(OPENING);
+        walletService.bet(MockGameProvider.CODE, sessionId, "BET-001", new BigDecimal("50"));
+        walletService.bet(MockGameProvider.CODE, sessionId, "BET-002", new BigDecimal("10"));
+        walletService.settle(MockGameProvider.CODE, sessionId, "SETTLE-001", "BET-001", new BigDecimal("100"));
+
+        assertThatThrownBy(() -> walletService.settle(
+                MockGameProvider.CODE, sessionId, "SETTLE-001", "BET-001", new BigDecimal("50")))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("交易号已存在，但请求内容不一致");
+        assertThatThrownBy(() -> walletService.settle(
+                MockGameProvider.CODE, sessionId, "SETTLE-001", "BET-002", new BigDecimal("100")))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("交易号已存在，但请求内容不一致");
+
+        assertThat(walletService.getBalance(UID).balance()).isEqualByComparingTo("1928.66");
+    }
+
     private String openSession(BigDecimal balance) {
         walletService.syncDemoBalance(UID, "DemoPlayer", balance);
         return sessionService.launch(UID, "demo-slots", MockGameProvider.CODE).getSessionId();

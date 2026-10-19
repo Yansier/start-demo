@@ -77,6 +77,18 @@
       "style": {
         "navigationBarTitleText": "提现记录"
       }
+    },
+    {
+      "path": "pages/game/demo-slots",
+      "style": {
+        "navigationBarTitleText": "Demo Slots"
+      }
+    },
+    {
+      "path": "pages/game/transactions",
+      "style": {
+        "navigationBarTitleText": "游戏流水"
+      }
     }
   ],
   "globalStyle": {
