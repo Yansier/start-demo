@@ -19,7 +19,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import PageShell from '@/components/layout/PageShell.vue'
 import AppNavBar from '@/components/layout/AppNavBar.vue'
 import LoginRequired from '@/components/auth/LoginRequired.vue'
@@ -27,10 +27,15 @@ import TaskTabs from '@/components/task/TaskTabs.vue'
 import TaskCard from '@/components/task/TaskCard.vue'
 import { taskTypes } from '@/mock/tasks'
 import { useTaskStore } from '@/stores/task'
+import { useUserStore } from '@/stores/user'
 import { showToast } from '@/utils/toast'
 
 const taskStore = useTaskStore()
-taskStore.hydrate()
+const userStore = useUserStore()
+
+watch(() => userStore.profile?.uid || '', (uid) => {
+  taskStore.hydrate(uid)
+}, { immediate: true })
 
 const current = ref(taskTypes[0].key)
 const visibleTasks = computed(() => taskStore.list.filter((item) => item.type === current.value))

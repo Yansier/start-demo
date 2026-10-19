@@ -86,6 +86,16 @@ export const useUserStore = defineStore('user', {
       this.token = ''
       this.profile = null
       this.persist()
+    },
+    setBalance(value) {
+      if (!this.profile) return
+      const balance = Math.round(Number(value) * 100) / 100
+      this.profile = { ...this.profile, balance }
+      this.persist()
+    },
+    adjustBalance(amount) {
+      const current = Number(this.profile?.balance) || 0
+      this.setBalance(current + Number(amount || 0))
     }
   }
 })

@@ -5,6 +5,10 @@ export const ROUTES = {
   task: '/pages/task/index',
   vip: '/pages/vip/index',
   invite: '/pages/invite/index',
+  deposit: '/pages/deposit/index',
+  depositRecords: '/pages/deposit/records',
+  withdraw: '/pages/withdraw/index',
+  withdrawRecords: '/pages/withdraw/records',
   user: '/pages/user/index',
   login: '/pages/login/index',
   register: '/pages/register/index'

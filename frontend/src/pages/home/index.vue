@@ -5,7 +5,7 @@
       :profile="userStore.profile"
       @login="openPage(ROUTES.login)"
       @register="openPage(ROUTES.register)"
-      @deposit="showComingSoon"
+      @deposit="openPage(ROUTES.deposit)"
     />
     <HomeBanner :banners="feed.banners" />
     <QuickGrid :items="QUICK_ENTRIES" @select="onQuick" />
@@ -26,7 +26,7 @@ import { ROUTES } from '@/config/routes'
 import { useUserStore } from '@/stores/user'
 import { runMenuAction } from '@/utils/action'
 import { openPage } from '@/utils/nav'
-import { showComingSoon, showToast } from '@/utils/toast'
+import { showToast } from '@/utils/toast'
 
 const userStore = useUserStore()
 const feed = getHomeFeed()

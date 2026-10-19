@@ -38,8 +38,17 @@ function copyByCommand(text) {
   return copied
 }
 
-export function copyText(text) {
+export async function copyText(text) {
   const value = String(text || '')
+  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(value)
+      showToast('复制成功')
+      return
+    } catch (error) {
+      // 继续走本地复制和 uni 剪贴板
+    }
+  }
   const copied = typeof document !== 'undefined' && copyByCommand(value)
   uni.setClipboardData({
     data: value,
