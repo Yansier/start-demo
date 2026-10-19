@@ -1,14 +1,14 @@
 <template>
   <PageShell :show-tab="false">
     <view class="top">
-      <view class="top__back" @click="leave">
+      <view class="top__back" :class="{ 'is-locked': roundLocked }" @click="leave">
         <view class="top__chevron" />
       </view>
       <view class="top__title">
         <text class="top__brand">DEMO PROVIDER</text>
         <text class="top__name">Demo Slots</text>
       </view>
-      <text class="top__link" @click="openRecords">游戏流水</text>
+      <text class="top__link" :class="{ 'is-locked': roundLocked }" @click="openRecords">游戏流水</text>
     </view>
 
     <view v-if="screen !== 'play'" class="notice glass-card">
@@ -98,6 +98,7 @@ const leaving = ref(false)
 let spinTimer = null
 
 const canPlay = computed(() => screen.value === 'play' && sessionId.value)
+const roundLocked = computed(() => busy.value || pendingBet.value !== null)
 
 onLoad((query) => {
   sessionId.value = query?.sessionId || ''
@@ -106,6 +107,7 @@ onLoad((query) => {
 
 onUnmounted(() => {
   clearSpin()
+  if (busy.value || pendingBet.value) return
   if (canPlay.value) closeQuietly()
 })
 
@@ -246,6 +248,14 @@ function createId(prefix) {
 }
 
 function openRecords() {
+  if (busy.value) {
+    showToast('本局正在处理中，请稍候')
+    return
+  }
+  if (pendingBet.value) {
+    showToast('本局尚未完成，请先结算或撤单')
+    return
+  }
   if (!userStore.isLogin) {
     showToast('请先登录')
     return
@@ -254,6 +264,14 @@ function openRecords() {
 }
 
 async function leave() {
+  if (busy.value) {
+    showToast('本局正在处理中，请稍候')
+    return
+  }
+  if (pendingBet.value) {
+    showToast('本局尚未完成，请先完成结算或模拟撤单')
+    return
+  }
   if (leaving.value) return
   leaving.value = true
   clearSpin()
@@ -335,6 +353,11 @@ function closeQuietly() {
   color: #8ef6ff;
   font-size: 13px;
   text-align: right;
+}
+
+.top__back.is-locked,
+.top__link.is-locked {
+  opacity: 0.4;
 }
 
 .notice {
