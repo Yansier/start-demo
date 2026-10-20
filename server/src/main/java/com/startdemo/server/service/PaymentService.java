@@ -65,10 +65,9 @@ public class PaymentService {
 
     @Transactional
     public DepositOrderResponse approveDeposit(String orderNo, String remark) {
-        DepositOrder current = requireDeposit(orderNo);
-        DemoWallet wallet = lockWallet(current.getUid());
         DepositOrder order = lockDeposit(orderNo);
         requirePending(order);
+        DemoWallet wallet = lockWallet(order.getUid());
         wallet.setBalance(wallet.getBalance().add(order.getAmount()));
         finish(order, PaymentStatus.APPROVED, remark);
         return DepositOrderResponse.from(order);
@@ -76,7 +75,6 @@ public class PaymentService {
 
     @Transactional
     public DepositOrderResponse rejectDeposit(String orderNo, String remark) {
-        requireDeposit(orderNo);
         DepositOrder order = lockDeposit(orderNo);
         requirePending(order);
         finish(order, PaymentStatus.REJECTED, remark);
@@ -113,7 +111,6 @@ public class PaymentService {
 
     @Transactional
     public WithdrawalOrderResponse approveWithdrawal(String orderNo, String remark) {
-        requireWithdrawal(orderNo);
         WithdrawalOrder order = lockWithdrawal(orderNo);
         requirePending(order);
         finish(order, PaymentStatus.APPROVED, remark);
@@ -122,10 +119,9 @@ public class PaymentService {
 
     @Transactional
     public WithdrawalOrderResponse rejectWithdrawal(String orderNo, String remark) {
-        WithdrawalOrder current = requireWithdrawal(orderNo);
-        DemoWallet wallet = lockWallet(current.getUid());
         WithdrawalOrder order = lockWithdrawal(orderNo);
         requirePending(order);
+        DemoWallet wallet = lockWallet(order.getUid());
         wallet.setBalance(wallet.getBalance().add(order.getAmount()));
         finish(order, PaymentStatus.REJECTED, remark);
         return WithdrawalOrderResponse.from(order);
