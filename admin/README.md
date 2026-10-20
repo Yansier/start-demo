@@ -4,7 +4,7 @@
 
 本地只读查询之外，Phase 5B.1 增加了充值和提现审核。这些写接口没有登录。
 
-当前没有登录。这是本地 Demo，不要部署到公网。在增加 Admin 访问保护之前，不能公开这些审核接口。
+当前没有登录。这是展示 Demo。本地开发走 `http://localhost:8080`。GitHub Pages 上的 Admin 走 `https://api.stockfines.com`，地址是 `https://yansier.github.io/start-demo/admin/#/dashboard`。
 
 ## 安装
 
@@ -18,7 +18,7 @@ npm install
 npm run dev
 ```
 
-默认地址：`http://localhost:5174`
+默认地址：`http://localhost:5174/#/dashboard`
 
 需要先启动 Spring Boot：`http://localhost:8080`
 
@@ -26,4 +26,10 @@ npm run dev
 
 ```text
 VITE_ADMIN_API_BASE=http://localhost:8080
+```
+
+生产构建读取 `.env.production`：
+
+```text
+VITE_ADMIN_API_BASE=https://api.stockfines.com
 ```

@@ -19,10 +19,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: frontend
-
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -32,29 +28,48 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: |
+            frontend/package-lock.json
+            admin/package-lock.json
 
-      - name: Install dependencies
+      - name: Install frontend dependencies
+        working-directory: frontend
         run: npm ci
 
       - name: Build H5
+        working-directory: frontend
         run: npm run build:h5
+
+      - name: Install admin dependencies
+        working-directory: admin
+        run: npm ci
+
+      - name: Build admin
+        working-directory: admin
+        run: npm run build
 
       - name: Prepare Pages artifact
         run: |
-          rm -rf ../pages-dist
+          rm -rf pages-dist
 
-          if [ -d "dist/build/web" ]; then
-            cp -a dist/build/web ../pages-dist
-          elif [ -d "dist/build/h5" ]; then
-            cp -a dist/build/h5 ../pages-dist
+          if [ -d "frontend/dist/build/web" ]; then
+            cp -a frontend/dist/build/web pages-dist
+          elif [ -d "frontend/dist/build/h5" ]; then
+            cp -a frontend/dist/build/h5 pages-dist
           else
             echo "Cannot find uni-app H5 build output."
-            find dist -maxdepth 3 -type f | sort | head -200
+            find frontend/dist -maxdepth 3 -type f | sort | head -200
             exit 1
           fi
 
-          touch ../pages-dist/.nojekyll
+          if [ ! -f admin/dist/index.html ]; then
+            echo "Cannot find admin build output."
+            exit 1
+          fi
+
+          mkdir -p pages-dist/admin
+          cp -a admin/dist/. pages-dist/admin/
+          touch pages-dist/.nojekyll
 
       - name: Setup Pages
         uses: actions/configure-pages@v6
