@@ -15,6 +15,7 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import PageShell from '@/components/layout/PageShell.vue'
 import AppNavBar from '@/components/layout/AppNavBar.vue'
 import LoginRequired from '@/components/auth/LoginRequired.vue'
@@ -25,6 +26,7 @@ import { ROUTES } from '@/config/routes'
 import { useUserStore } from '@/stores/user'
 import { useWalletStore } from '@/stores/wallet'
 import { openPage } from '@/utils/nav'
+import { showToast } from '@/utils/toast'
 
 const tabs = [
   { key: 'usdt', name: 'USDT' },
@@ -38,6 +40,15 @@ const balance = computed(() => Number(userStore.profile?.balance) || 0)
 watch(() => userStore.profile?.uid || '', (uid) => {
   walletStore.bind(uid)
 }, { immediate: true })
+
+onShow(() => {
+  if (!userStore.isLogin || !userStore.profile) return
+  walletStore.ensureServerWallet(userStore.profile)
+    .then(() => walletStore.refreshBalance())
+    .catch((error) => {
+      showToast(error.message || '余额同步失败')
+    })
+})
 </script>
 
 <style scoped>

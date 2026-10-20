@@ -3,7 +3,10 @@ package com.startdemo.server.service;
 import com.startdemo.server.domain.TransactionType;
 import com.startdemo.server.error.BusinessException;
 import com.startdemo.server.provider.MockGameProvider;
+import com.startdemo.server.repository.DemoWalletRepository;
+import com.startdemo.server.repository.DepositOrderRepository;
 import com.startdemo.server.repository.WalletTransactionRepository;
+import com.startdemo.server.repository.WithdrawalOrderRepository;
 import com.startdemo.server.web.dto.WalletResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,13 +33,27 @@ class WalletServiceTest {
     private GameSessionService sessionService;
 
     @Autowired
+    private PaymentService paymentService;
+
+    @Autowired
     private WalletTransactionRepository transactionRepository;
+
+    @Autowired
+    private DemoWalletRepository walletRepository;
+
+    @Autowired
+    private DepositOrderRepository depositRepository;
+
+    @Autowired
+    private WithdrawalOrderRepository withdrawalRepository;
 
     @BeforeEach
     void clean() {
+        depositRepository.deleteAll();
+        withdrawalRepository.deleteAll();
         transactionRepository.deleteAll();
         sessionService.deleteByUid(UID);
-        walletService.syncDemoBalance(UID, "DemoPlayer", BigDecimal.ZERO);
+        walletRepository.deleteAll();
     }
 
     @Test
@@ -189,6 +206,38 @@ class WalletServiceTest {
                 .hasMessage("交易号已存在，但请求内容不一致");
 
         assertThat(walletService.getBalance(UID).balance()).isEqualByComparingTo("1928.66");
+    }
+
+    @Test
+    void syncCreatesMissingWallet() {
+        assertThat(walletService.syncDemoBalance(UID, "DemoPlayer", OPENING).balance())
+                .isEqualByComparingTo("1888.66");
+        assertThat(walletService.getBalance(UID).balance()).isEqualByComparingTo("1888.66");
+    }
+
+    @Test
+    void syncKeepsBalanceAfterDepositApproval() {
+        walletService.syncDemoBalance(UID, "DemoPlayer", OPENING);
+        var order = paymentService.createDeposit(UID, "USDT", new BigDecimal("100"));
+        paymentService.approveDeposit(order.orderNo(), null);
+
+        var again = walletService.syncDemoBalance(UID, "Renamed", OPENING);
+
+        assertThat(again.balance()).isEqualByComparingTo("1988.66");
+        assertThat(walletService.getBalance(UID).balance()).isEqualByComparingTo("1988.66");
+        assertThat(walletRepository.findByUid(UID).orElseThrow().getUsername()).isEqualTo("Renamed");
+    }
+
+    @Test
+    void syncKeepsBalanceAfterBetAndSettle() {
+        String sessionId = openSession(OPENING);
+        walletService.bet(MockGameProvider.CODE, sessionId, "BET-SYNC", new BigDecimal("50"));
+        walletService.settle(MockGameProvider.CODE, sessionId, "SETTLE-SYNC", "BET-SYNC", new BigDecimal("100"));
+
+        var again = walletService.syncDemoBalance(UID, "DemoPlayer", OPENING);
+
+        assertThat(again.balance()).isEqualByComparingTo("1938.66");
+        assertThat(walletService.getBalance(UID).balance()).isEqualByComparingTo("1938.66");
     }
 
     private String openSession(BigDecimal balance) {

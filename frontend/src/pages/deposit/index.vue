@@ -15,6 +15,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import PageShell from '@/components/layout/PageShell.vue'
 import AppNavBar from '@/components/layout/AppNavBar.vue'
 import LoginRequired from '@/components/auth/LoginRequired.vue'
@@ -22,13 +23,25 @@ import WalletTabs from '@/components/wallet/WalletTabs.vue'
 import UsdtDeposit from '@/components/deposit/UsdtDeposit.vue'
 import ChannelDeposit from '@/components/deposit/ChannelDeposit.vue'
 import { ROUTES } from '@/config/routes'
+import { useUserStore } from '@/stores/user'
+import { useWalletStore } from '@/stores/wallet'
 import { openPage } from '@/utils/nav'
+import { showToast } from '@/utils/toast'
 
 const tabs = [
   { key: 'usdt', name: 'USDT' },
   { key: 'channel', name: 'X钱包' }
 ]
 const current = ref('usdt')
+const userStore = useUserStore()
+const walletStore = useWalletStore()
+
+onShow(() => {
+  if (!userStore.isLogin || !userStore.profile) return
+  walletStore.ensureServerWallet(userStore.profile).catch((error) => {
+    showToast(error.message || '余额同步失败')
+  })
+})
 </script>
 
 <style scoped>

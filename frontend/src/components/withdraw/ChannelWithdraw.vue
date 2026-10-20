@@ -55,23 +55,26 @@ function fillAll() {
   amount.value = formatAmount(props.balance).replace(/,/g, '')
 }
 
-function submit() {
+async function submit() {
   if (submitting.value) return
   submitting.value = true
-  const result = walletStore.submitWithdraw({
-    channel: 'X钱包',
-    amount: amount.value,
-    password: password.value
-  })
-  submitting.value = false
-  if (!result.ok) {
-    errorText.value = result.message
-    return
-  }
-  amount.value = ''
-  password.value = ''
   errorText.value = ''
-  showToast('提现申请已提交')
+  try {
+    const result = await walletStore.submitWithdraw({
+      channel: 'X钱包',
+      amount: amount.value,
+      password: password.value
+    })
+    if (!result.ok) {
+      errorText.value = result.message
+      return
+    }
+    amount.value = ''
+    password.value = ''
+    showToast('提现申请已提交')
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 

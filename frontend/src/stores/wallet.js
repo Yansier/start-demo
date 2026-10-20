@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
-import { createDefaultWallet } from '@/mock/wallet'
+import { getGameBalance, syncGameWallet } from '@/api/game-server'
+import { createDeposit, createWithdrawal, getDeposits, getWithdrawals, toServerChannel } from '@/api/payment-server'
 import { useUserStore } from '@/stores/user'
 import { readJSON, writeJSON } from '@/utils/storage'
 
@@ -9,12 +10,6 @@ function storageKey(uid) {
 
 function roundMoney(value) {
   return Math.round(Number(value) * 100) / 100
-}
-
-function nowText() {
-  const date = new Date()
-  const pad = (value) => String(value).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
 function emptyWallet() {
@@ -49,15 +44,14 @@ export const useWalletStore = defineStore('wallet', {
         return
       }
       if (this.ready && this.uid === next) return
-      const saved = readJSON(storageKey(next))
-      const source = saved || createDefaultWallet()
+      const saved = readJSON(storageKey(next)) || {}
       this.uid = next
-      this.address = source.address || ''
-      this.withdrawPassword = source.withdrawPassword || ''
-      this.deposits = Array.isArray(source.deposits) ? source.deposits : []
-      this.withdrawals = Array.isArray(source.withdrawals) ? source.withdrawals : []
-      this.transactions = Array.isArray(source.transactions) ? source.transactions : []
-      this.requiredTurnover = Number(source.requiredTurnover) || 0
+      this.address = saved.address || ''
+      this.withdrawPassword = saved.withdrawPassword || ''
+      this.deposits = []
+      this.withdrawals = []
+      this.transactions = []
+      this.requiredTurnover = Number(saved.requiredTurnover) || 0
       this.ready = true
     },
     persist() {
@@ -65,9 +59,6 @@ export const useWalletStore = defineStore('wallet', {
       writeJSON(storageKey(this.uid), {
         address: this.address,
         withdrawPassword: this.withdrawPassword,
-        deposits: this.deposits,
-        withdrawals: this.withdrawals,
-        transactions: this.transactions,
         requiredTurnover: this.requiredTurnover
       })
     },
@@ -87,30 +78,87 @@ export const useWalletStore = defineStore('wallet', {
       this.persist()
       return ''
     },
-    submitWithdraw({ channel, amount, password }) {
-      if (!this.uid) return { ok: false, message: '请先登录' }
+    async ensureServerWallet(profile) {
+      if (!profile?.uid) {
+        return null
+      }
+      this.bind(profile.uid)
+      const wallet = await syncGameWallet(profile)
+      const user = useUserStore()
+      if (user.profile?.uid === profile.uid) {
+        user.setBalance(wallet.balance)
+      }
+      return wallet
+    },
+    async refreshBalance() {
+      const user = useUserStore()
+      if (!user.profile?.uid) return null
+      const result = await getGameBalance(user.profile.uid)
+      user.setBalance(result.balance)
+      return result
+    },
+    async loadDeposits() {
+      if (!this.uid) return []
+      const list = await getDeposits(this.uid)
+      this.deposits = Array.isArray(list) ? list : []
+      return this.deposits
+    },
+    async loadWithdrawals() {
+      if (!this.uid) return []
+      const list = await getWithdrawals(this.uid)
+      this.withdrawals = Array.isArray(list) ? list : []
+      return this.withdrawals
+    },
+    async createDeposit({ channel, amount }) {
+      const user = useUserStore()
+      if (!user.isLogin || !user.profile) return { ok: false, message: '请先登录' }
       const value = roundMoney(amount)
-      if (channel === 'USDT' && !this.address) return { ok: false, message: '请先绑定提现地址' }
+      if (!value) return { ok: false, message: '请输入充值金额' }
+      if (value < 10) return { ok: false, message: '最低充值金额为10' }
+      try {
+        await this.ensureServerWallet(user.profile)
+        await createDeposit({
+          uid: user.profile.uid,
+          channel,
+          amount: value
+        })
+      } catch (error) {
+        return { ok: false, message: error.message || '充值订单提交失败' }
+      }
+      try {
+        await this.loadDeposits()
+      } catch {
+        // 订单已经创建，列表留到记录页重新请求。
+      }
+      return { ok: true }
+    },
+    async submitWithdraw({ channel, amount, password }) {
+      const user = useUserStore()
+      if (!user.isLogin || !this.uid) return { ok: false, message: '请先登录' }
+      const value = roundMoney(amount)
+      const serverChannel = toServerChannel(channel)
+      if (serverChannel === 'USDT' && !this.address) return { ok: false, message: '请先绑定提现地址' }
       if (!value) return { ok: false, message: '请输入提现金额' }
       if (value < 10) return { ok: false, message: '最低提现金额为10U' }
-      const balance = Number(useUserStore().profile?.balance) || 0
-      if (value > balance) return { ok: false, message: '余额不足' }
       if (!this.withdrawPassword) return { ok: false, message: '请先设置提现密码' }
       if (String(password || '') !== this.withdrawPassword) return { ok: false, message: '提现密码错误' }
-      useUserStore().adjustBalance(-value)
-      this.withdrawals = [
-        {
-          id: `wd-${Date.now()}`,
+      try {
+        await this.ensureServerWallet(user.profile)
+        await createWithdrawal({
+          uid: this.uid,
           channel,
           amount: value,
-          fee: 0,
-          status: '审核中',
-          time: nowText(),
-          address: channel === 'USDT' ? this.address : ''
-        },
-        ...this.withdrawals
-      ]
-      this.persist()
+          address: serverChannel === 'USDT' ? this.address : null
+        })
+      } catch (error) {
+        return { ok: false, message: error.message || '提现申请失败' }
+      }
+      try {
+        await this.refreshBalance()
+        await this.loadWithdrawals()
+      } catch {
+        // 扣款已经由 Java 完成，页面再次进入时会重新读取余额。
+      }
       return { ok: true }
     }
   }

@@ -50,17 +50,14 @@ public class WalletService {
 
     /**
      * DEMO ONLY.
-     * 把前端 Mock 余额写入游戏钱包，只为当前 Demo 衔接。
-     * 正式生产系统中，余额必须由服务器作为唯一数据源，不会由前端上传余额覆盖服务器。
+     * 钱包不存在时，用前端初始余额创建 DemoWallet。
+     * 钱包已存在时，只更新用户名，余额保持 Java 当前值，不能被前端余额覆盖。
      */
     @Transactional
     public BalanceResponse syncDemoBalance(String uid, String username, BigDecimal balance) {
-        BigDecimal normalized = nonNegative(balance);
-        DemoWallet wallet = walletRepository.findByUid(uid)
-                .orElseGet(() -> new DemoWallet(uid, username, normalized));
-        wallet.setUsername(username);
-        wallet.setBalance(normalized);
-        return toBalance(walletRepository.save(wallet));
+        return walletRepository.findByUidForUpdate(uid)
+                .map(wallet -> keepServerBalance(wallet, username))
+                .orElseGet(() -> toBalance(walletRepository.save(new DemoWallet(uid, username, nonNegative(balance)))));
     }
 
     /**
@@ -290,6 +287,13 @@ public class WalletService {
     private DemoWallet requireWallet(String uid) {
         return walletRepository.findByUid(uid)
                 .orElseThrow(() -> new BusinessException("钱包不存在"));
+    }
+
+    private BalanceResponse keepServerBalance(DemoWallet wallet, String username) {
+        if (username != null && !username.isBlank()) {
+            wallet.setUsername(username.trim());
+        }
+        return toBalance(wallet);
     }
 
     private BalanceResponse toBalance(DemoWallet wallet) {

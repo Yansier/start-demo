@@ -148,7 +148,7 @@ cd frontend
 npm run dev:h5
 ```
 
-打开 `http://localhost:5173/`，使用 `demo` / `123456` 登录，从首页进入 Demo Slots。可以验证 BET、SETTLE、ROLLBACK 和游戏流水。进入游戏前，前端会把当前 Demo 余额同步到 Java 钱包，这只用于当前 Demo。
+打开 `http://localhost:5173/`，使用 `demo` / `123456` 登录，从首页进入 Demo Slots。可以验证 BET、SETTLE、ROLLBACK 和游戏流水。进入游戏前会调用 sync：钱包不存在时用前端初始余额创建；钱包已存在时返回 Java 当前余额，不会用前端缓存覆盖。
 
 ## Phase 5A Admin Query API
 
@@ -192,4 +192,10 @@ DEMO ONLY。LOCAL DEMO ONLY。
 
 充值提现不写入游戏流水 `WalletTransaction`。游戏流水仍然只有 BET、SETTLE、ROLLBACK。
 
-`syncDemoBalance` 仍然只用于 Demo 初始化，不参与审核。
+`syncDemoBalance` 只在钱包不存在时写入初始余额。钱包已存在时只更新用户名，余额保持 Java 当前值，不参与充值提现审核，也不能把前端旧余额写回去。
+
+## Phase 5B.2 玩家充值提现
+
+玩家 H5 提交充值、提现并读取订单。余额以 `DemoWallet.balance` 为准。充值通过后加余额，提现提交时扣余额，拒绝时退回。玩家重新进入首页、充值、提现或记录页时重新请求 Java。没有 WebSocket。
+
+公网 `api.stockfines.com` 仍是旧服务。在上传新 jar 之前，不要把这一阶段的玩家前端部署到 GitHub Pages，否则线上 sync 仍会用前端余额覆盖服务器。

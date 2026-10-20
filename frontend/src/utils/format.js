@@ -6,6 +6,12 @@ export function formatAmount(value) {
   })
 }
 
+export function formatServerTime(value) {
+  if (!value) return ''
+  const text = String(value).replace('T', ' ')
+  return text.length >= 16 ? text.slice(0, 16) : text
+}
+
 export function shortText(value, head = 4, tail = 4) {
   const text = String(value || '')
   if (text.length <= head + tail + 1) return text

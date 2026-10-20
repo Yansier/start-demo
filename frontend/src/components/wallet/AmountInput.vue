@@ -1,6 +1,6 @@
 <template>
   <view class="amount">
-    <text class="amount__label">提现金额</text>
+    <text class="amount__label">{{ label }}</text>
     <view class="amount__row">
       <input
         class="field"
@@ -9,14 +9,17 @@
         placeholder-class="ph"
         @input="onInput"
       />
-      <view class="amount__all" @click="$emit('fill')">全部提现</view>
+      <view v-if="showFill" class="amount__all" @click="$emit('fill')">{{ fillText }}</view>
     </view>
   </view>
 </template>
 
 <script setup>
 defineProps({
-  modelValue: { type: String, default: '' }
+  modelValue: { type: String, default: '' },
+  label: { type: String, default: '提现金额' },
+  fillText: { type: String, default: '全部提现' },
+  showFill: { type: Boolean, default: true }
 })
 
 const emit = defineEmits(['update:modelValue', 'fill'])
